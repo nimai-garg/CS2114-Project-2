@@ -60,12 +60,18 @@ public class Incident {
         return status;
     }
 
+    /** Specification name; getUnitId is retained for existing callers. */
+    public Integer getAssignedUnitId()
+    {
+        return unitId;
+    }
+
     public Integer getUnitId()
     {
         return unitId;
     }
 
-        public void assignUnit(int unitId1)
+    public void assignUnit(int unitId1)
     {
         if (unitId1 < 0)
         {
@@ -85,7 +91,7 @@ public class Incident {
         unitId = unitId1;
     }
 
-        public void resolve()
+    public void resolve()
     {
         status = IncidentStatus.RESOLVED;
     }
