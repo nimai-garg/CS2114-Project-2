@@ -6,6 +6,173 @@ import static org.junit.Assert.*;
 public class EmergencyDispatchTest
 {
     @Test
+    public void missingIdsLeavePopulatedDispatcherUnchanged()
+    {
+        EmergencyDispatch d = ready();
+        assertTrue(d.assignUnit(1, 10));
+        assertTrue(d.reportIncident(incident(2, Severity.LOW)));
+        assertTrue(d.addResponseUnit(new ResponseUnit(11, UnitType.EMT)));
+        String before = state(d);
+        for (int missing : new int[] {-1, 0, 999, Integer.MAX_VALUE})
+        {
+            assertNull(d.findActiveIncident(missing));
+            assertNull(d.findResponseUnit(missing));
+            assertFalse(d.assignUnit(missing, 11));
+            assertFalse(d.assignUnit(2, missing));
+            assertFalse(d.resolveIncident(missing));
+            assertFalse(d.returnUnitToService(missing));
+            assertEquals(before, state(d));
+        }
+    }
+
+    @Test
+    public void duplicateIdsCannotOverwriteAssignedIncidentOrBusyUnit()
+    {
+        EmergencyDispatch d = ready();
+        assertTrue(d.assignUnit(1, 10));
+        String before = state(d);
+        assertFalse(d.reportIncident(new Incident(1, IncidentType.MEDICAL,
+            "Different location", Severity.CRITICAL)));
+        assertFalse(d.addResponseUnit(new ResponseUnit(10, UnitType.EMT)));
+        assertEquals(before, state(d));
+        assertFalse(d.returnUnitToService(10));
+        assertEquals(before, state(d));
+    }
+
+    @Test
+    public void resolvedDuplicateIdCannotReplaceHistoryAfterUnitReuse()
+    {
+        EmergencyDispatch d = ready();
+        assertTrue(d.assignUnit(1, 10));
+        assertTrue(d.resolveIncident(1));
+        assertTrue(d.returnUnitToService(10));
+        assertTrue(d.reportIncident(incident(2, Severity.LOW)));
+        assertTrue(d.assignUnit(2, 10));
+        String before = state(d);
+        assertFalse(d.reportIncident(new Incident(1, IncidentType.MEDICAL,
+            "Different location", Severity.CRITICAL)));
+        assertEquals(before, state(d));
+    }
+
+    @Test
+    public void unitRegisteredBusyMustReturnToServiceBeforeAssignment()
+    {
+        EmergencyDispatch d = new EmergencyDispatch();
+        ResponseUnit busy = new ResponseUnit(1000, UnitType.FIRE_RESCUE);
+        busy.setAvailable(false);
+        assertTrue(d.addResponseUnit(busy));
+        assertTrue(d.reportIncident(incident(1, Severity.HIGH)));
+        String before = state(d);
+        assertFalse(d.assignUnit(1, 1000));
+        assertEquals(before, state(d));
+        assertTrue(d.returnUnitToService(1000));
+        assertTrue(d.assignUnit(1, 1000));
+        assertFalse(d.returnUnitToService(1000));
+        assertFalse(d.findResponseUnit(1000).isAvailable());
+        assertEquals(Integer.valueOf(1000), d.findActiveIncident(1).getUnitId());
+    }
+
+    @Test
+    public void repeatedResolutionCannotReleaseUnitServingAnotherIncident()
+    {
+        EmergencyDispatch d = ready();
+        assertTrue(d.assignUnit(1, 10));
+        assertTrue(d.resolveIncident(1));
+        assertTrue(d.returnUnitToService(10));
+        assertTrue(d.reportIncident(incident(2, Severity.LOW)));
+        assertTrue(d.assignUnit(2, 10));
+        String before = state(d);
+        for (int attempt = 0; attempt < 3; attempt++)
+        {
+            assertFalse(d.resolveIncident(1));
+            assertFalse(d.assignUnit(1, 10));
+            assertFalse(d.returnUnitToService(10));
+            assertEquals(before, state(d));
+        }
+        assertTrue(d.resolveIncident(2));
+        assertTrue(d.returnUnitToService(10));
+        assertEquals(2, d.getResolvedCount(IncidentType.FIRE));
+    }
+
+    @Test
+    public void resolutionRemovesOnlyRequestedIncidentAtEveryChainPosition()
+    {
+        for (int target = 1; target <= 3; target++)
+        {
+            EmergencyDispatch d = new EmergencyDispatch();
+            for (int id = 1; id <= 3; id++)
+            {
+                assertTrue(d.reportIncident(incident(id, Severity.HIGH)));
+            }
+            assertTrue(d.resolveIncident(target));
+            assertFalse(d.resolveIncident(target));
+            assertEquals(2, d.getActiveIncidents().size());
+            assertEquals(1, d.getResolvedIncidents().size());
+            assertEquals(target, d.getResolvedIncidents().get(0).getId());
+            assertNull(d.findActiveIncident(target));
+            for (int id = 1; id <= 3; id++)
+            {
+                if (id != target)
+                {
+                    assertEquals(IncidentStatus.ACTIVE, d.findActiveIncident(id).getStatus());
+                }
+            }
+        }
+    }
+
+    @Test
+    public void assignmentWithEitherChainEmptyPreservesExistingEntries()
+    {
+        EmergencyDispatch onlyIncident = new EmergencyDispatch();
+        assertTrue(onlyIncident.reportIncident(incident(1, Severity.HIGH)));
+        String before = state(onlyIncident);
+        assertFalse(onlyIncident.assignUnit(1, 10));
+        assertEquals(before, state(onlyIncident));
+
+        EmergencyDispatch onlyUnit = new EmergencyDispatch();
+        assertTrue(onlyUnit.addResponseUnit(new ResponseUnit(10, UnitType.EMT)));
+        before = state(onlyUnit);
+        assertFalse(onlyUnit.assignUnit(1, 10));
+        assertEquals(before, state(onlyUnit));
+    }
+
+    @Test
+    public void dispatcherCanStartAnotherWorkflowAfterActiveChainBecomesEmpty()
+    {
+        EmergencyDispatch d = ready();
+        assertTrue(d.assignUnit(1, 10));
+        assertTrue(d.resolveIncident(1));
+        assertTrue(d.getActiveIncidents().isEmpty());
+        assertNull(d.getHighestPriorityIncident());
+        assertTrue(d.returnUnitToService(10));
+        assertTrue(d.reportIncident(incident(2, Severity.CRITICAL)));
+        assertEquals(2, d.getHighestPriorityIncident().getId());
+        assertTrue(d.assignUnit(2, 10));
+        assertTrue(d.resolveIncident(2));
+        assertTrue(d.getActiveIncidents().isEmpty());
+        assertNull(d.getHighestPriorityIncident());
+        assertEquals(2, d.getResolvedIncidents().size());
+        assertEquals(2, d.getDispatchCount());
+    }
+
+    // Include fields omitted by model equals(), which compares only IDs.
+    private String state(EmergencyDispatch d)
+    {
+        StringBuilder result = new StringBuilder();
+        result.append(d.getActiveIncidents()).append('\n');
+        result.append(d.getResolvedIncidents()).append('\n');
+        result.append(d.getResponseUnits()).append('\n');
+        result.append(d.getDispatchLog()).append('\n');
+        result.append(d.getDispatchCount()).append('\n');
+        result.append(d.getHighestPriorityIncident()).append('\n');
+        for (IncidentType type : IncidentType.values())
+        {
+            result.append(type).append(':').append(d.getResolvedCount(type)).append('\n');
+        }
+        return result.toString();
+    }
+
+    @Test
     public void inputObjectsCannotChangeStoredStateAfterRegistration()
     {
         EmergencyDispatch d = new EmergencyDispatch();

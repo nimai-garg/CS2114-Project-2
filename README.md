@@ -24,7 +24,11 @@ The bin folder is generated when compiling and is excluded from Git.
 
 ## Tests
 
-The project uses **JUnit 4** and contains **50 tests**.
+The project uses **JUnit 4** and contains **60 tests**.
+
+Regression coverage includes missing IDs in populated systems, duplicate IDs
+after assignment and resolution, busy units, assignment with either chain empty,
+repeated resolution after unit reuse, and chain reuse after removal or clearing.
 
 In VS Code, open **Testing** and choose **Run All Tests**. In Eclipse, right-click the test folder and choose **Run As → JUnit Test**. If JUnit is missing, add the JUnit 4 library to the Java build path. The existing .classpath defines both source folders and the JUnit 4 container.
 

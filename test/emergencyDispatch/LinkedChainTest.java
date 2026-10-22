@@ -6,6 +6,54 @@ import static org.junit.Assert.*;
 public class LinkedChainTest
 {
     @Test
+    public void emptiedChainCanBeReusedAfterEveryRemovalPath()
+    {
+        for (int removal = 0; removal < 3; removal++)
+        {
+            LinkedChain<String> c = new LinkedChain<>();
+            c.add("only");
+            if (removal == 0)
+            {
+                assertEquals("only", c.remove());
+            }
+            else if (removal == 1)
+            {
+                assertTrue(c.remove("only"));
+            }
+            else
+            {
+                c.clear();
+            }
+            assertTrue(c.isEmpty());
+            assertEquals(0, c.size());
+            assertNull(c.remove());
+            assertFalse(c.remove("only"));
+            assertArrayEquals(new String[0], c.toArray(new String[0]));
+            assertTrue(c.addToEnd("tail"));
+            assertTrue(c.add("head"));
+            assertArrayEquals(new String[] {"head", "tail"}, c.toArray(new String[2]));
+            assertEquals(2, c.size());
+        }
+    }
+
+    @Test
+    public void duplicateRemovalDeletesOnlyFirstEqualEntry()
+    {
+        LinkedChain<String> c = new LinkedChain<>();
+        c.addToEnd(new String("duplicate"));
+        c.addToEnd("middle");
+        c.addToEnd(new String("duplicate"));
+        assertTrue(c.remove(new String("duplicate")));
+        assertEquals(2, c.size());
+        assertEquals(1, c.count("duplicate"));
+        assertArrayEquals(new String[] {"middle", "duplicate"}, c.toArray(new String[2]));
+        assertTrue(c.remove("duplicate"));
+        assertFalse(c.remove("duplicate"));
+        assertEquals(1, c.size());
+        assertEquals("middle", c.get(0));
+    }
+
+    @Test
     public void emptyAndMissingOperations()
     {
         LinkedChain<String> c = new LinkedChain<>();
