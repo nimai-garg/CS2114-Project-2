@@ -2,6 +2,7 @@ package emergencyDispatch;
 
 import org.junit.Test;
 import static org.junit.Assert.*;
+// Tests incident validation, state changes, and identity.
 public class IncidentTest
 {
     private Incident incident(int id)
@@ -37,7 +38,6 @@ public class IncidentTest
         }
         catch (IllegalArgumentException exception)
         {
-            // The invalid input should be rejected here.
         }
         try
         {
@@ -46,7 +46,6 @@ public class IncidentTest
         }
         catch (IllegalArgumentException exception)
         {
-            // The invalid input should be rejected here.
         }
         try
         {
@@ -55,7 +54,6 @@ public class IncidentTest
         }
         catch (IllegalArgumentException exception)
         {
-            // The invalid input should be rejected here.
         }
         for (String location : new String[] {null, "", "  "})
         {
@@ -66,7 +64,6 @@ public class IncidentTest
             }
             catch (IllegalArgumentException exception)
             {
-                // The invalid input should be rejected here.
             }
         }
     }
@@ -82,7 +79,6 @@ public class IncidentTest
         }
         catch (IllegalArgumentException exception)
         {
-            // The invalid input should be rejected here.
         }
         assertNull(i.getUnitId());
         i.assignUnit(2);
@@ -93,7 +89,6 @@ public class IncidentTest
         }
         catch (IllegalStateException exception)
         {
-            // The invalid input should be rejected here.
         }
         assertEquals(Integer.valueOf(2), i.getAssignedUnitId());
         Incident resolved = incident(2);
@@ -105,7 +100,6 @@ public class IncidentTest
         }
         catch (IllegalStateException exception)
         {
-            // The invalid input should be rejected here.
         }
         assertNull(resolved.getUnitId());
     }

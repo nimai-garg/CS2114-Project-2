@@ -2,6 +2,7 @@ package emergencyDispatch;
 
 import org.junit.Test;
 import static org.junit.Assert.*;
+// Tests unit validation, availability, and identity.
 public class ResponseUnitTest
 {
     @Test
@@ -30,7 +31,6 @@ public class ResponseUnitTest
         }
         catch (IllegalArgumentException exception)
         {
-            // The invalid input should be rejected here.
         }
         try
         {
@@ -39,7 +39,6 @@ public class ResponseUnitTest
         }
         catch (IllegalArgumentException exception)
         {
-            // The invalid input should be rejected here.
         }
     }
 

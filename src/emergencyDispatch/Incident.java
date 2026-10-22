@@ -1,17 +1,15 @@
 package emergencyDispatch;
 import java.util.Objects;
 
-/** An emergency. Identity uses its ID, independent of mutable dispatch state. */
 public final class Incident {
-    //~ Fields ................................................................
     private final int id;
     private final IncidentType type;
     private final String location;
     private final Severity severity;
     private IncidentStatus status;
     private Integer unitId;
-    //~ Constructors ..........................................................
-    public Incident(int id, IncidentType type, String location, Severity severity) 
+
+    public Incident(int id, IncidentType type, String location, Severity severity)
     {
         if (id < 0)
         {
@@ -35,7 +33,7 @@ public final class Incident {
         this.status = IncidentStatus.ACTIVE;
         this.unitId = null;
     }
-    //~Public  Methods ........................................................
+
     public int getId()
     {
         return id;
@@ -61,7 +59,6 @@ public final class Incident {
         return status;
     }
 
-    /** Specification name; getUnitId is retained for existing callers. */
     public Integer getAssignedUnitId()
     {
         return unitId;
@@ -97,7 +94,7 @@ public final class Incident {
         status = IncidentStatus.RESOLVED;
     }
 
-    // A detached snapshot prevents callers from changing dispatcher-owned state.
+    // Copies the incident to protect stored state from outside changes.
     Incident copy()
     {
         Incident result = new Incident(id, type, location, severity);
@@ -133,7 +130,7 @@ public final class Incident {
     @Override
     public String toString()
     {
-        return "Incident ID: " + id + ", Type: " + type + ", Location: " + location + ", Severity: " + severity + ", Status: " + status 
+        return "Incident ID: " + id + ", Type: " + type + ", Location: " + location + ", Severity: " + severity + ", Status: " + status
         + ", Unit: " + unitId;
     }
 }

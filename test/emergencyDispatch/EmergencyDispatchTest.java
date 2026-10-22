@@ -2,6 +2,7 @@ package emergencyDispatch;
 
 import org.junit.Test;
 import static org.junit.Assert.*;
+// Tests dispatch rules, snapshots, priority, and statistics.
 public class EmergencyDispatchTest
 {
     @Test

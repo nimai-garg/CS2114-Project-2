@@ -2,6 +2,7 @@ package emergencyDispatch;
 
 import org.junit.Test;
 import static org.junit.Assert.*;
+// Tests normal operations and invalid input for the generic chain.
 public class LinkedChainTest
 {
     @Test
@@ -25,7 +26,6 @@ public class LinkedChainTest
         }
         catch (IndexOutOfBoundsException exception)
         {
-            // The invalid input should be rejected here.
         }
         c.clear();
         assertTrue(c.isEmpty());
@@ -74,7 +74,6 @@ public class LinkedChainTest
         }
         catch (IllegalArgumentException exception)
         {
-            // The invalid input should be rejected here.
         }
         try
         {
@@ -83,7 +82,6 @@ public class LinkedChainTest
         }
         catch (IllegalArgumentException exception)
         {
-            // The invalid input should be rejected here.
         }
         try
         {
@@ -92,7 +90,6 @@ public class LinkedChainTest
         }
         catch (IllegalArgumentException exception)
         {
-            // The invalid input should be rejected here.
         }
         try
         {
@@ -101,7 +98,6 @@ public class LinkedChainTest
         }
         catch (IllegalArgumentException exception)
         {
-            // The invalid input should be rejected here.
         }
         try
         {
@@ -110,7 +106,6 @@ public class LinkedChainTest
         }
         catch (IndexOutOfBoundsException exception)
         {
-            // The invalid input should be rejected here.
         }
         try
         {
@@ -119,7 +114,6 @@ public class LinkedChainTest
         }
         catch (IndexOutOfBoundsException exception)
         {
-            // The invalid input should be rejected here.
         }
         assertEquals(1, c.size());
         assertEquals("safe", c.get(0));
