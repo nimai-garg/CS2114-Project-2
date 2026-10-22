@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="880" viewBox="0 0 1280 880" role="img" aria-labelledby="title desc">
+<title id="title">Emergency Dispatch system diagram</title>
+<desc id="desc">Main sends validated commands to EmergencyDispatch. EmergencyDispatch owns active and resolved incident chains, a response unit chain and a String assignment log. All use the same LinkedChain generic class and its private Node. Model snapshots are returned to Main.</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#526574"/></marker></defs>
+<rect width="1280" height="880" fill="#f7f9fb"/>
+<style>text{font-family:Arial,Helvetica,sans-serif;fill:#152c40}.title{font-size:30px;font-weight:700}.head{font-size:21px;font-weight:700}.body{font-size:17px}.small{font-size:15px}.label{font-size:16px;fill:#405a6c}.edge{fill:none;stroke:#526574;stroke-width:2}</style>
+<text x="50" y="52" class="title">Emergency Dispatch</text>
+<text x="50" y="82" class="body">Application rules above; reusable generic storage below.</text>
+<rect x="50" y="125" width="320" height="155" rx="10" fill="#fff" stroke="#becbd5"/>
+<text x="72" y="159" class="head">Main</text>
+<text x="72" y="190" class="body">Parse fields; recover from errors</text>
+<text x="72" y="215" class="body">Display views, history and stats</text>
+<text x="72" y="240" class="body">Console input / output</text>
+<rect x="490" y="125" width="740" height="155" rx="10" fill="#e5eff5" stroke="#becbd5"/>
+<text x="512" y="159" class="head">EmergencyDispatch</text>
+<text x="512" y="190" class="body">Register, assign, resolve and return units</text>
+<text x="512" y="215" class="body">Enforce unique IDs and assignment rules; calculate priority and statistics</text>
+<text x="512" y="240" class="body">Own model state; return detached snapshots</text>
+<path d="M 370 169 H 490" class="edge"/>
+<text x="382" y="151" class="label">commands</text>
+<path d="M 490 240 H 370" class="edge"/>
+<text x="380" y="226" class="label">snapshots</text>
+<path d="M 860 280 V 318 H 200 V 350" class="edge"/>
+<path d="M 860 318 H 495 V 350" class="edge"/>
+<path d="M 860 318 H 790 V 350" class="edge"/>
+<path d="M 860 318 H 1085 V 350" class="edge"/>
+<text x="65" y="306" class="label">owns four typed chains; calls add / remove / toArray / size</text>
+<rect x="50" y="350" width="285" height="155" rx="10" fill="#fff" stroke="#becbd5"/>
+<text x="72" y="384" class="head">activeIncidents</text>
+<text x="72" y="415" class="body">LinkedChain&lt;Incident&gt;</text>
+<text x="72" y="440" class="body">ACTIVE records</text>
+<text x="72" y="465" class="body">Newest reported first</text>
+<rect x="345" y="350" width="285" height="155" rx="10" fill="#fff" stroke="#becbd5"/>
+<text x="367" y="384" class="head">resolvedIncidents</text>
+<text x="367" y="415" class="body">LinkedChain&lt;Incident&gt;</text>
+<text x="367" y="440" class="body">RESOLVED records</text>
+<text x="367" y="465" class="body">Keep assigned-unit IDs</text>
+<rect x="640" y="350" width="285" height="155" rx="10" fill="#fff" stroke="#becbd5"/>
+<text x="662" y="384" class="head">responseUnits</text>
+<text x="662" y="415" class="body">LinkedChain&lt;ResponseUnit&gt;</text>
+<text x="662" y="440" class="body">Registered units</text>
+<text x="662" y="465" class="body">Available or busy</text>
+<rect x="935" y="350" width="295" height="155" rx="10" fill="#fff" stroke="#becbd5"/>
+<text x="957" y="384" class="head">dispatchLog</text>
+<text x="957" y="415" class="body">LinkedChain&lt;String&gt;</text>
+<text x="957" y="440" class="body">Successful assignments</text>
+<text x="957" y="465" class="body">Chronological order</text>
+<path d="M 192 505 V 545 H 640 V 590" class="edge"/>
+<path d="M 487 505 V 545" class="edge"/>
+<path d="M 782 505 V 545 H 640" class="edge"/>
+<path d="M 1082 505 V 545 H 782" class="edge"/>
+<text x="660" y="577" class="label">same class, different type arguments</text>
+<rect x="330" y="590" width="620" height="145" rx="10" fill="#e5eff5" stroke="#becbd5"/>
+<text x="352" y="624" class="head">LinkedChain&lt;T&gt;</text>
+<text x="352" y="655" class="body">Storage only: firstNode, numberOfEntries</text>
+<text x="352" y="680" class="body">Unbounded T; duplicates allowed; no emergency rules</text>
+<text x="352" y="705" class="body">Private Node&lt;E&gt;: data + next</text>
+<path d="M 640 735 V 774" class="edge"/>
+<rect x="280" y="775" width="720" height="80" rx="10" fill="#fff" stroke="#becbd5"/>
+<text x="302" y="809" class="head">Private linked nodes</text>
+<text x="302" y="840" class="body"></text>
+<text x="310" y="838" class="body">firstNode → [data | next] → [data | next] → null</text>
+<polygon points="490,169 478,163 478,175" fill="#526574"/>
+<polygon points="370,240 382,234 382,246" fill="#526574"/>
+<polygon points="200,350 194,338 206,338" fill="#526574"/>
+<polygon points="495,350 489,338 501,338" fill="#526574"/>
+<polygon points="790,350 784,338 796,338" fill="#526574"/>
+<polygon points="1085,350 1079,338 1091,338" fill="#526574"/>
+<polygon points="640,590 634,578 646,578" fill="#526574"/>
+<polygon points="640,774 634,762 646,762" fill="#526574"/>
+</svg>
