@@ -1,7 +1,8 @@
 package emergencyDispatch;
 import java.util.Objects;
 
-public class Incident {
+/** An emergency. Identity uses its ID, independent of mutable dispatch state. */
+public final class Incident {
     //~ Fields ................................................................
     private final int id;
     private final IncidentType type;
@@ -96,6 +97,15 @@ public class Incident {
         status = IncidentStatus.RESOLVED;
     }
 
+    // A detached snapshot prevents callers from changing dispatcher-owned state.
+    Incident copy()
+    {
+        Incident result = new Incident(id, type, location, severity);
+        result.unitId = unitId;
+        result.status = status;
+        return result;
+    }
+
     @Override
     public boolean equals(Object other)
     {
@@ -124,6 +134,6 @@ public class Incident {
     public String toString()
     {
         return "Incident ID: " + id + ", Type: " + type + ", Location: " + location + ", Severity: " + severity + ", Status: " + status 
-        + ",Unit: " + unitId;
+        + ", Unit: " + unitId;
     }
 }

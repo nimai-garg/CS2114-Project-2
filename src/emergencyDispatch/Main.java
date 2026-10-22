@@ -1,19 +1,16 @@
 package emergencyDispatch;
 
 import java.util.Scanner;
-/** Small console prototype. Enter one command per line; EOF also exits. */
+import java.util.Locale;
+
+/** Console entry point. Enter one command per line; EOF also exits cleanly. */
 public class Main
 {
     public static void main(String[] args)
     {
         EmergencyDispatch dispatch = new EmergencyDispatch();
-        System.out.println("Emergency Dispatch prototype");
-        System.out.println("incident|ID|TYPE|LOCATION|SEVERITY; unit|ID|TYPE");
-        System.out.println("assign|INCIDENT_ID|UNIT_ID; resolve|ID; return|ID");
-        System.out.println("view; priority; history; quit (enum names use uppercase)");
-        System.out.println("Incident types: " + java.util.Arrays.toString(IncidentType.values()));
-        System.out.println("Unit types: " + java.util.Arrays.toString(UnitType.values()));
-        System.out.println("Severity: LOW, MEDIUM, HIGH, CRITICAL");
+        System.out.println("Emergency Dispatch — Final Build");
+        printHelp();
         Scanner input = new Scanner(System.in);
         while (input.hasNextLine())
         {
@@ -23,7 +20,7 @@ public class Main
             {
                 fields[i] = fields[i].trim();
             }
-            String command = fields[0].toLowerCase();
+            String command = fields[0].toLowerCase(Locale.ROOT);
             try
             {
                 if (command.equals("quit"))
@@ -35,31 +32,31 @@ public class Main
                 {
                     case "incident":
                         requireLength(fields, 5);
-                        int incidentId = Integer.parseInt(fields[1]);
-                        IncidentType incidentType = IncidentType.valueOf(fields[2]);
+                        int incidentId = parseId(fields[1]);
+                        IncidentType incidentType = IncidentType.valueOf(fields[2].toUpperCase(Locale.ROOT));
                         String location = fields[3];
-                        Severity severity = Severity.valueOf(fields[4]);
+                        Severity severity = Severity.valueOf(fields[4].toUpperCase(Locale.ROOT));
                         Incident incident = new Incident(incidentId, incidentType, location, severity);
                         show(dispatch.reportIncident(incident));
                         break;
                     case "unit":
                         requireLength(fields, 3);
-                        int unitId = Integer.parseInt(fields[1]);
-                        UnitType unitType = UnitType.valueOf(fields[2]);
+                        int unitId = parseId(fields[1]);
+                        UnitType unitType = UnitType.valueOf(fields[2].toUpperCase(Locale.ROOT));
                         ResponseUnit unit = new ResponseUnit(unitId, unitType);
                         show(dispatch.addResponseUnit(unit));
                         break;
                     case "assign":
                         requireLength(fields, 3);
-                        show(dispatch.assignUnit(Integer.parseInt(fields[1]), Integer.parseInt(fields[2])));
+                        show(dispatch.assignUnit(parseId(fields[1]), parseId(fields[2])));
                         break;
                     case "resolve":
                         requireLength(fields, 2);
-                        show(dispatch.resolveIncident(Integer.parseInt(fields[1])));
+                        show(dispatch.resolveIncident(parseId(fields[1])));
                         break;
                     case "return":
                         requireLength(fields, 2);
-                        show(dispatch.returnUnitToService(Integer.parseInt(fields[1])));
+                        show(dispatch.returnUnitToService(parseId(fields[1])));
                         break;
                     case "view":
                         requireLength(fields, 1);
@@ -81,7 +78,22 @@ public class Main
                         break;
                     case "history":
                         requireLength(fields, 1);
-                        System.out.println(dispatch.getDispatchLog());
+                        System.out.println("Dispatch assignments: " + dispatch.getDispatchLog());
+                        System.out.println("Resolved incidents: " + dispatch.getResolvedIncidents());
+                        break;
+                    case "stats":
+                        requireLength(fields, 1);
+                        System.out.println("Active incidents: " + dispatch.getActiveIncidents().size());
+                        System.out.println("Resolved incidents: " + dispatch.getResolvedIncidents().size());
+                        System.out.println("Successful dispatches: " + dispatch.getDispatchCount());
+                        for (IncidentType type : IncidentType.values())
+                        {
+                            System.out.println("Resolved " + type + ": " + dispatch.getResolvedCount(type));
+                        }
+                        break;
+                    case "help":
+                        requireLength(fields, 1);
+                        printHelp();
                         break;
                     default:
                         throw new IllegalArgumentException("Unknown command");
@@ -91,6 +103,36 @@ public class Main
             {
                 System.out.println("Invalid input: " + exception.getMessage() + ". Try again.");
             }
+        }
+    }
+
+    private static void printHelp()
+    {
+        System.out.println("Enter one command per line, separating fields with |.");
+        System.out.println("incident|ID|TYPE|LOCATION|SEVERITY; unit|ID|TYPE");
+        System.out.println("assign|INCIDENT_ID|UNIT_ID; resolve|ID; return|ID");
+        System.out.println("view; priority; history; stats; help; quit");
+        System.out.println("Incident types: " + java.util.Arrays.toString(IncidentType.values()));
+        System.out.println("Unit types: " + java.util.Arrays.toString(UnitType.values()));
+        System.out.println("Severity: LOW, MEDIUM, HIGH, CRITICAL. Names are case-insensitive.");
+        System.out.println("IDs are nonnegative integers. Locations cannot contain |.");
+        System.out.println("Resolve an incident before returning its unit to service.");
+    }
+
+    private static int parseId(String value)
+    {
+        try
+        {
+            int id = Integer.parseInt(value);
+            if (id < 0)
+            {
+                throw new IllegalArgumentException("IDs must be nonnegative integers");
+            }
+            return id;
+        }
+        catch (NumberFormatException exception)
+        {
+            throw new IllegalArgumentException("IDs must be nonnegative integers up to 2147483647");
         }
     }
 

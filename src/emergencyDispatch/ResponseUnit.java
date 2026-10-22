@@ -1,7 +1,7 @@
 package emergencyDispatch;
 
 /** A registered unit. Equality is based on its nonnegative ID. */
-public class ResponseUnit
+public final class ResponseUnit
 {
     private final int id;
     private final UnitType type;
@@ -34,6 +34,14 @@ public class ResponseUnit
     public void setAvailable(boolean available)
     {
         this.available = available;
+    }
+
+    // Preserve availability while separating the caller's object from storage.
+    ResponseUnit copy()
+    {
+        ResponseUnit result = new ResponseUnit(id, type);
+        result.available = available;
+        return result;
     }
 
     @Override

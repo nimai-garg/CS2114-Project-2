@@ -4,6 +4,163 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 public class EmergencyDispatchTest
 {
+    @Test
+    public void inputObjectsCannotChangeStoredStateAfterRegistration()
+    {
+        EmergencyDispatch d = new EmergencyDispatch();
+        Incident input = incident(1, Severity.HIGH);
+        ResponseUnit unit = new ResponseUnit(10, UnitType.FIRE_RESCUE);
+        assertTrue(d.reportIncident(input));
+        assertTrue(d.addResponseUnit(unit));
+        input.assignUnit(999);
+        input.resolve();
+        unit.setAvailable(false);
+        assertEquals(IncidentStatus.ACTIVE, d.findActiveIncident(1).getStatus());
+        assertNull(d.findActiveIncident(1).getAssignedUnitId());
+        assertTrue(d.findResponseUnit(10).isAvailable());
+        assertTrue(d.assignUnit(1, 10));
+    }
+
+    @Test
+    public void finderSnapshotsCannotBypassAssignmentAndResolutionRules()
+    {
+        EmergencyDispatch d = ready();
+        assertTrue(d.assignUnit(1, 10));
+        d.findActiveIncident(1).resolve();
+        d.findResponseUnit(10).setAvailable(true);
+        assertEquals(IncidentStatus.ACTIVE, d.findActiveIncident(1).getStatus());
+        assertFalse(d.findResponseUnit(10).isAvailable());
+        d.reportIncident(incident(2, Severity.CRITICAL));
+        assertFalse(d.assignUnit(2, 10));
+        assertFalse(d.returnUnitToService(10));
+        assertEquals(1, d.getDispatchCount());
+    }
+
+    @Test
+    public void collectionAndPrioritySnapshotsProtectModelState()
+    {
+        EmergencyDispatch d = ready();
+        d.getActiveIncidents().get(0).assignUnit(999);
+        d.getHighestPriorityIncident().resolve();
+        d.getResponseUnits().get(0).setAvailable(false);
+        assertNull(d.findActiveIncident(1).getUnitId());
+        assertEquals(IncidentStatus.ACTIVE, d.findActiveIncident(1).getStatus());
+        assertTrue(d.assignUnit(1, 10));
+        assertTrue(d.resolveIncident(1));
+        d.getResolvedIncidents().clear();
+        assertEquals(IncidentStatus.RESOLVED, d.getResolvedIncidents().get(0).getStatus());
+        assertEquals(Integer.valueOf(10), d.getResolvedIncidents().get(0).getAssignedUnitId());
+    }
+
+    @Test
+    public void snapshotsRemainDetachedAfterLaterDispatcherActions()
+    {
+        EmergencyDispatch d = ready();
+        Incident before = d.findActiveIncident(1);
+        ResponseUnit unitBefore = d.findResponseUnit(10);
+        LinkedChain<Incident> activeBefore = d.getActiveIncidents();
+        assertTrue(d.assignUnit(1, 10));
+        assertTrue(d.resolveIncident(1));
+        assertNull(before.getAssignedUnitId());
+        assertEquals(IncidentStatus.ACTIVE, before.getStatus());
+        assertTrue(unitBefore.isAvailable());
+        assertEquals(1, activeBefore.size());
+        assertEquals(IncidentStatus.ACTIVE, activeBefore.get(0).getStatus());
+        assertEquals(IncidentStatus.RESOLVED, d.getResolvedIncidents().get(0).getStatus());
+    }
+
+    @Test
+    public void statisticsCountOnlySuccessfulActionsAndCorrectTypes()
+    {
+        EmergencyDispatch d = ready();
+        assertEquals(0, d.getDispatchCount());
+        for (IncidentType type : IncidentType.values())
+        {
+            assertEquals(0, d.getResolvedCount(type));
+        }
+        assertFalse(d.assignUnit(1, 999));
+        assertEquals(0, d.getDispatchCount());
+        assertTrue(d.assignUnit(1, 10));
+        assertEquals(0, d.getResolvedCount(IncidentType.FIRE));
+        assertTrue(d.resolveIncident(1));
+        assertFalse(d.resolveIncident(1));
+        assertEquals(1, d.getResolvedCount(IncidentType.FIRE));
+        assertTrue(d.reportIncident(new Incident(2, IncidentType.MEDICAL, "Clinic", Severity.LOW)));
+        assertTrue(d.resolveIncident(2));
+        assertEquals(1, d.getResolvedCount(IncidentType.MEDICAL));
+        assertEquals(0, d.getResolvedCount(IncidentType.THEFT));
+        assertEquals(1, d.getDispatchCount());
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void statisticsRejectNullIncidentType()
+    {
+        new EmergencyDispatch().getResolvedCount(null);
+    }
+
+    @Test
+    public void statisticsCoverEveryIncidentTypeAndAccumulateSameType()
+    {
+        EmergencyDispatch d = new EmergencyDispatch();
+        int id = 0;
+        for (IncidentType type : IncidentType.values())
+        {
+            assertTrue(d.reportIncident(new Incident(id, type, "Site", Severity.LOW)));
+            assertTrue(d.resolveIncident(id));
+            assertEquals(1, d.getResolvedCount(type));
+            id++;
+        }
+        d.reportIncident(incident(id, Severity.LOW));
+        d.resolveIncident(id);
+        assertEquals(2, d.getResolvedCount(IncidentType.FIRE));
+        assertEquals(0, d.getDispatchCount());
+    }
+
+    @Test
+    public void priorityIncludesAssignedIncidentsAndBreaksTiesInEitherInsertionOrder()
+    {
+        EmergencyDispatch d = ready();
+        d.assignUnit(1, 10);
+        assertEquals(1, d.getHighestPriorityIncident().getId());
+        d.reportIncident(incident(3, Severity.HIGH));
+        assertEquals(1, d.getHighestPriorityIncident().getId());
+        d.reportIncident(incident(0, Severity.HIGH));
+        assertEquals(0, d.getHighestPriorityIncident().getId());
+    }
+
+    @Test
+    public void unitCanServeSeveralIncidentsWithoutLosingResolvedAssignments()
+    {
+        EmergencyDispatch d = ready();
+        d.assignUnit(1, 10);
+        d.resolveIncident(1);
+        d.reportIncident(incident(2, Severity.LOW));
+        assertFalse(d.assignUnit(2, 10));
+        assertTrue(d.returnUnitToService(10));
+        assertTrue(d.assignUnit(2, 10));
+        assertFalse(d.returnUnitToService(10));
+        assertEquals(Integer.valueOf(10), d.getResolvedIncidents().get(0).getAssignedUnitId());
+        d.resolveIncident(2);
+        assertEquals(2, d.getDispatchCount());
+        assertEquals(2, d.getResolvedCount(IncidentType.FIRE));
+        assertEquals(2, d.getDispatchLog().size());
+    }
+
+    @Test
+    public void zeroAndMaximumIdsAreSupportedAndMissingIdsAreSafe()
+    {
+        EmergencyDispatch d = new EmergencyDispatch();
+        assertTrue(d.reportIncident(incident(0, Severity.LOW)));
+        assertTrue(d.addResponseUnit(new ResponseUnit(Integer.MAX_VALUE, UnitType.EMT)));
+        assertTrue(d.assignUnit(0, Integer.MAX_VALUE));
+        assertFalse(d.assignUnit(0, -1));
+        assertFalse(d.resolveIncident(Integer.MAX_VALUE));
+        assertNull(d.findActiveIncident(Integer.MAX_VALUE));
+        assertNull(d.findResponseUnit(0));
+        assertTrue(d.resolveIncident(0));
+        assertTrue(d.returnUnitToService(Integer.MAX_VALUE));
+    }
+
     private Incident incident(int id, Severity severity)
     {
         return new Incident(id, IncidentType.FIRE, "Main St", severity);

@@ -6,6 +6,65 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 public class MainTest
 {
+    @Test
+    public void statisticsAndResolvedHistoryAreVisible() throws Exception
+    {
+        String out = run("stats\nunit|10|EMT\nincident|1|MEDICAL|Clinic|CRITICAL\n"
+            + "assign|1|10\nresolve|1\nresolve|1\nreturn|10\nhistory\nstats\nquit\n");
+        assertTrue(out.contains("Successful dispatches: 0"));
+        assertTrue(out.contains("Successful dispatches: 1"));
+        assertTrue(out.contains("Resolved incidents: 1"));
+        assertTrue(out.contains("Resolved MEDICAL: 1"));
+        assertTrue(out.contains("Resolved FIRE: 0"));
+        assertTrue(out.contains("Assigned unit 10 to incident 1"));
+        assertTrue(out.contains("Status: RESOLVED"));
+        assertFalse(out.contains("Successful dispatches: 2"));
+    }
+
+    @Test
+    public void commandsAndEnumsIgnoreCaseAndTrimFields() throws Exception
+    {
+        String out = run("  UnIt | 10 | emt \nInCiDeNt|1|medical| Clinic |critical\n"
+            + "AsSiGn|1|10\nRESOLVE|1\nRETURN|10\nVIEW\nHELP\nQUIT\n");
+        assertFalse(out.contains("Invalid input:"));
+        assertTrue(out.contains("Status: RESOLVED"));
+        assertTrue(out.contains("Available: true"));
+        assertTrue(out.contains("Location: Clinic"));
+    }
+
+    @Test
+    public void extraFieldsOverflowAndBlankNamesRecoverBeforeValidCommand() throws Exception
+    {
+        String[] invalid = {"stats|extra", "history|extra", "help|extra", "view|extra",
+            "priority|extra", "quit|extra", "unit|2147483648|EMT", "assign|-1|1",
+            "unit|1|", "incident|1||X|HIGH", "incident|1|FIRE|X|",
+            "incident|1|FIRE|A|B|HIGH", "return|1|extra", "resolve|1|extra"};
+        for (String command : invalid)
+        {
+            String out = run(command + "\nunit|2147483647|emt\nview\nquit\n");
+            assertTrue(command, out.contains("Invalid input:"));
+            assertTrue(command, out.contains("Unit ID: 2147483647"));
+        }
+    }
+
+    @Test
+    public void parsingDoesNotDependOnSystemLocale() throws Exception
+    {
+        java.util.Locale original = java.util.Locale.getDefault();
+        try
+        {
+            java.util.Locale.setDefault(java.util.Locale.forLanguageTag("tr-TR"));
+            String out = run("UNIT|1|police\nINCIDENT|1|missing_persons|Park|high\nview\nquit\n");
+            assertFalse(out.contains("Invalid input:"));
+            assertTrue(out.contains("Type: MISSING_PERSONS"));
+            assertTrue(out.contains("Type: POLICE"));
+        }
+        finally
+        {
+            java.util.Locale.setDefault(original);
+        }
+    }
+
     // Supply test keyboard input and collect printed output, then restore both.
     private String run(String commands) throws Exception
     {
@@ -56,7 +115,7 @@ public class MainTest
     @Test
     public void eofAndQuitNeedNoMoreInput() throws Exception
     {
-        assertTrue(run("").contains("prototype"));
+        assertTrue(run("").contains("Final Build"));
         assertFalse(run("quit\nunknown\n").contains("Invalid input:"));
     }
 
