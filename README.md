@@ -7,7 +7,7 @@ Repository: https://github.com/nimai-garg/CS2114-Project-2
 A Java console simulation for reporting emergencies, assigning response units, resolving incidents, and returning units to service. One generic LinkedChain stores Incident, ResponseUnit, and assignment-history String entries.
 
 ## System Design
-
+![Emergency Dispatcher System Diagram](SystemDesign.png)
 
 ## Run
 
